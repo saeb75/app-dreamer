@@ -1,33 +1,43 @@
 import { Link, Tabs } from 'expo-router';
+import { View } from 'react-native';
+import CustomFloatingTabBar from '../components/customTabbar';
 
-import { HeaderButton } from '../../components/HeaderButton';
-import { TabBarIcon } from '../../components/TabBarIcon';
+import CustomTabs from '../components/customTabbar';
+import { FontAwesome } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: 'black',
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-    </Tabs>
+    <View className="flex-1">
+      <Tabs
+        initialRouteName="create"
+        tabBar={(props) => <CustomTabs props={props} />}
+        screenOptions={{
+          tabBarActiveTintColor: 'black',
+          headerShown: false,
+          tabBarStyle: { display: 'none' }, // Hide default tab bar
+        }}>
+        <Tabs.Screen
+          name="models"
+          options={{
+            title: 'Models',
+          }}
+        />
+        <Tabs.Screen
+          name="create"
+          options={{
+            title: 'Create',
+
+            headerRight: () => <Link href="/modal" asChild></Link>,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color }) => <FontAwesome name="cog" size={24} color={color} />,
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }
