@@ -99,6 +99,7 @@ export interface AppState {
   categories: Category[];
   stepsLoading: boolean;
   stepsError: string | null;
+  categoriesInitialized: boolean;
 
   // Actions
   fetchCategories: () => Promise<void>;
@@ -113,13 +114,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   categories: [],
   stepsLoading: false,
   stepsError: null,
+  categoriesInitialized: false,
 
   // Actions
   fetchCategories: async () => {
+    const state = get();
+    if (state.categoriesInitialized) {
+      return; // Already initialized, don't fetch again
+    }
+
     try {
       set({ stepsLoading: true, stepsError: null });
       const response = await appServices.getSteps();
-      set({ categories: response.data, stepsLoading: false });
+      set({
+        categories: response.data,
+        stepsLoading: false,
+        categoriesInitialized: true,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch categories';
       set({ stepsError: errorMessage, stepsLoading: false });

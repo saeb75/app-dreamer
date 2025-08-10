@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
+import { MotiView } from 'moti';
 
 const ModelCard = ({
   image,
@@ -13,13 +14,24 @@ const ModelCard = ({
   isSelected: boolean;
 }) => {
   return (
-    <Pressable className="items-center justify-center rounded-lg " onPress={onPress}>
-      <Image
-        source={{
-          uri: image.url,
+    <Pressable className="items-center justify-center  " onPress={onPress}>
+      <MotiView
+        animate={{
+          borderRadius: isSelected ? 20 : 12,
         }}
-        className={`h-44 w-44 rounded-lg ${isSelected ? 'border-2 border-black' : ''}`}
-      />
+        transition={{
+          type: 'spring',
+          damping: 15,
+          stiffness: 150,
+        }}
+        className={`h-44 w-44 border-2 ${isSelected ? 'border-black' : 'border-transparent'} overflow-hidden`}>
+        <Image
+          source={{
+            uri: image.url,
+          }}
+          className="h-full w-full"
+        />
+      </MotiView>
       <Text
         className={`text-center text-lg font-bold ${isSelected ? 'text-black' : 'text-gray-500'}`}>
         {name}

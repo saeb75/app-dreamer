@@ -1,9 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import useAuthStore from '~/store/useAuth';
 
 // Types and Interfaces
-export interface ApiResponse<T = any> {
-  data: T;
+// Auth specific response interface
+export interface AuthResponse {
+  user: any;
+  jwt: string;
   message?: string;
   success: boolean;
   status: number;
@@ -73,12 +77,15 @@ export class ApiService {
         console.log(`✅ API Response: ${response.status} ${response.config.url}`);
         return response;
       },
+
       async (error) => {
         console.error('❌ Response Error:', error.response?.status, error.message);
-
+        console.log({ error });
         // Handle 401 Unauthorized
         if (error.response?.status === 401) {
-          await this.handleUnauthorized();
+          await AsyncStorage.clear();
+          useAuthStore.getState().logout();
+          router.push('/login');
         }
 
         // Handle 403 Forbidden
@@ -137,9 +144,9 @@ export class ApiService {
   }
 
   // Generic GET request
-  public async get<T = any>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+  public async get<T = any>(url: string, config?: RequestConfig): Promise<T> {
     try {
-      const response = await this.instance.get<ApiResponse<T>>(url, config);
+      const response = await this.instance.get<T>(url, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -147,13 +154,9 @@ export class ApiService {
   }
 
   // Generic POST request
-  public async post<T = any>(
-    url: string,
-    data?: any,
-    config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
+  public async post<T = any>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     try {
-      const response = await this.instance.post<ApiResponse<T>>(url, data, config);
+      const response = await this.instance.post<T>(url, data, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -161,13 +164,9 @@ export class ApiService {
   }
 
   // Generic PUT request
-  public async put<T = any>(
-    url: string,
-    data?: any,
-    config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
+  public async put<T = any>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     try {
-      const response = await this.instance.put<ApiResponse<T>>(url, data, config);
+      const response = await this.instance.put<T>(url, data, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -175,13 +174,9 @@ export class ApiService {
   }
 
   // Generic PATCH request
-  public async patch<T = any>(
-    url: string,
-    data?: any,
-    config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
+  public async patch<T = any>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     try {
-      const response = await this.instance.patch<ApiResponse<T>>(url, data, config);
+      const response = await this.instance.patch<T>(url, data, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -189,9 +184,9 @@ export class ApiService {
   }
 
   // Generic DELETE request
-  public async delete<T = any>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+  public async delete<T = any>(url: string, config?: RequestConfig): Promise<T> {
     try {
-      const response = await this.instance.delete<ApiResponse<T>>(url, config);
+      const response = await this.instance.delete<T>(url, config);
       return response.data;
     } catch (error) {
       throw error;
@@ -204,12 +199,12 @@ export class ApiService {
     file: any,
     onProgress?: (progress: number) => void,
     config?: RequestConfig
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await this.instance.post<ApiResponse<T>>(url, formData, {
+      const response = await this.instance.post<T>(url, formData, {
         ...config,
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -243,10 +238,10 @@ export class ApiService {
 
   // Retry mechanism
   public async retryRequest<T = any>(
-    requestFn: () => Promise<ApiResponse<T>>,
+    requestFn: () => Promise<T>,
     maxRetries: number = 3,
     delay: number = 1000
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     let lastError: any;
 
     for (let i = 0; i < maxRetries; i++) {

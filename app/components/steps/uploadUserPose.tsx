@@ -1,17 +1,5 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  Dimensions,
-  Image,
-  Text,
-  View,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  PermissionsAndroid,
-  Platform,
-  Pressable,
-  Switch,
-} from 'react-native';
+import { Dimensions, Image, Text, View, TouchableOpacity, FlatList, Alert } from 'react-native';
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
@@ -26,22 +14,10 @@ interface PhotoItem {
   type: 'sample' | 'camera' | 'gallery';
 }
 
-const Upload = () => {
-  // const [selectedTopImage, setSelectedTopImage] = useState<string | null>(null);
-  // const [selectedBottomImage, setSelectedBottomImage] = useState<string | null>(null);
-  const {
-    setTopPhoto,
-    setBottomPhoto,
-    setFullBodyPhoto,
-    topPhoto,
-    bottomPhoto,
-    fullBodyPhoto,
-    uploadType,
-    setUploadType,
-  } = useGenerateStore();
+const UploadUserPose = () => {
+  const { userPose, setUserPose } = useGenerateStore();
   const [galleryPhotos, setGalleryPhotos] = useState<PhotoItem[]>([]);
   const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
-  const [currentUploadType, setCurrentUploadType] = useState<'top' | 'bottom' | 'fullbody'>('top');
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['25%', '75%'], []);
@@ -50,7 +26,6 @@ const Upload = () => {
   const samplePhotos: PhotoItem[] = [
     { id: '1', uri: require('../../../assets/images/top.png'), type: 'sample' },
     { id: '2', uri: require('../../../assets/images/bottom.png'), type: 'sample' },
-    { id: '3', uri: require('../../../assets/images/top.png'), type: 'sample' },
   ];
 
   const requestPermissions = async () => {
@@ -140,13 +115,7 @@ const Upload = () => {
 
     if (!result.canceled && result.assets[0]) {
       const selectedImage = result.assets[0].uri;
-      if (currentUploadType === 'top') {
-        setTopPhoto(selectedImage);
-      } else if (currentUploadType === 'bottom') {
-        setBottomPhoto(selectedImage);
-      } else {
-        setFullBodyPhoto(selectedImage);
-      }
+      setUserPose(selectedImage);
       bottomSheetRef.current?.close();
     }
   };
@@ -167,21 +136,13 @@ const Upload = () => {
 
     if (!result.canceled && result.assets[0]) {
       const selectedImage = result.assets[0].uri;
-      if (currentUploadType === 'top') {
-        setTopPhoto(selectedImage);
-      } else if (currentUploadType === 'bottom') {
-        setBottomPhoto(selectedImage);
-      } else {
-        setFullBodyPhoto(selectedImage);
-      }
+      setUserPose(selectedImage);
       bottomSheetRef.current?.close();
     }
   };
 
-  const openBottomSheet = (type: 'top' | 'bottom' | 'fullbody') => {
-    setCurrentUploadType(type);
+  const openBottomSheet = () => {
     setIsBottomSheetOpen(true);
-    // Load gallery photos in background, don't block the UI
     setTimeout(() => {
       loadGalleryPhotos();
     }, 100);
@@ -203,13 +164,7 @@ const Upload = () => {
     <TouchableOpacity
       className="mr-3 h-20 w-20 overflow-hidden rounded-lg border-2 border-gray-300"
       onPress={() => {
-        if (currentUploadType === 'top') {
-          setTopPhoto(item.uri);
-        } else if (currentUploadType === 'bottom') {
-          setBottomPhoto(item.uri);
-        } else {
-          setFullBodyPhoto(item.uri);
-        }
+        setUserPose(item.uri);
         bottomSheetRef.current?.close();
       }}>
       <Image source={{ uri: item.uri }} className="h-full w-full" />
@@ -217,13 +172,12 @@ const Upload = () => {
   );
 
   const renderUploadSection = (
-    type: 'top' | 'bottom' | 'fullbody',
     selectedImage: string | null,
     placeholderImage: any,
     title: string
   ) => (
     <TouchableOpacity
-      onPress={() => openBottomSheet(type)}
+      onPress={() => openBottomSheet()}
       className="relative mb-4 h-[240px] items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 shadow-md"
       style={{ elevation: 3 }}>
       {selectedImage ? (
@@ -244,64 +198,9 @@ const Upload = () => {
     </TouchableOpacity>
   );
 
-  const handleDressButtonPress = () => {
-    // This function will be called when the Dress button is pressed
-    // You can add any specific logic here for the dress upload functionality
-    console.log('Dress button pressed');
-
-    // For now, we'll just open the bottom sheet for top upload
-    // You can modify this behavior as needed
-    openBottomSheet('top');
-  };
-
   return (
     <View className="flex-1 p-4">
-      {/* Upload Type Switch */}
-      <View className="mb-5 flex-row items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-4">
-        <Text className="mx-3 text-base font-semibold text-gray-700">Separate</Text>
-        <Switch
-          value={uploadType === 'FullBody'}
-          onValueChange={(value) => {
-            setUploadType(value ? 'FullBody' : 'Separate');
-            // Clear photos when switching modes
-            if (value) {
-              setTopPhoto(null);
-              setBottomPhoto(null);
-            } else {
-              setFullBodyPhoto(null);
-            }
-          }}
-          trackColor={{ false: '#767577', true: '#81b0ff' }}
-          thumbColor={uploadType === 'FullBody' ? '#f5dd4b' : '#f4f3f4'}
-          ios_backgroundColor="#3e3e3e"
-        />
-        <Text className="mx-3 text-base font-semibold text-gray-700">Full Body</Text>
-      </View>
-
-      {/* Upload Sections based on upload type */}
-      {uploadType === 'Separate' ? (
-        <>
-          {renderUploadSection(
-            'top',
-            topPhoto,
-            require('../../../assets/images/top.png'),
-            'Upload Your Top'
-          )}
-          {renderUploadSection(
-            'bottom',
-            bottomPhoto,
-            require('../../../assets/images/bottom.png'),
-            'Upload Your Bottom'
-          )}
-        </>
-      ) : (
-        renderUploadSection(
-          'fullbody',
-          fullBodyPhoto,
-          require('../../../assets/images/top.png'), // You can use a different placeholder for full body
-          'Upload Full Body Outfit'
-        )
-      )}
+      {renderUploadSection(userPose, require('../../../assets/images/top.png'), 'Upload Your Pose')}
 
       <BottomSheet
         ref={bottomSheetRef}
@@ -317,13 +216,7 @@ const Upload = () => {
         handleIndicatorStyle={{ backgroundColor: '#d1d5db', width: 40, height: 4 }}>
         <BottomSheetView className="flex-1 p-5">
           <View className="mb-5 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-gray-800">
-              {currentUploadType === 'top'
-                ? 'Select Top Photo'
-                : currentUploadType === 'bottom'
-                  ? 'Select Bottom Photo'
-                  : 'Select Full Body Photo'}
-            </Text>
+            <Text className="text-lg font-bold text-gray-800">Select Pose Photo</Text>
             <TouchableOpacity onPress={() => bottomSheetRef.current?.close()}>
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -390,4 +283,4 @@ const Upload = () => {
 
 // All styles converted to NativeWind classes
 
-export default Upload;
+export default UploadUserPose;
