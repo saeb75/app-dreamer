@@ -24,12 +24,13 @@ const ModelCard = ({
           damping: 15,
           stiffness: 150,
         }}
-        className={`h-44 w-44 border-2 ${isSelected ? 'border-black' : 'border-transparent'} overflow-hidden`}>
+        className={`h-60 w-full border-2 ${isSelected ? 'border-black' : 'border-transparent'} overflow-hidden`}>
         <Image
           source={{
-            uri: image.url,
+            uri: image?.url,
           }}
-          className="h-full w-full"
+          resizeMode="cover"
+          className="h-full w-full object-cover"
         />
       </MotiView>
       <Text

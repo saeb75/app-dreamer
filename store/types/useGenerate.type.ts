@@ -70,4 +70,5 @@ export type UseGenerateType = {
   // Utility actions
   clearGenerations: () => void;
   clearError: () => void;
+  tryOnGenerate: () => Promise<void>;
 };

@@ -111,13 +111,103 @@ const useGenerateStore = create<UseGenerateType>((set, get) => ({
         formData.append('images', fullBodyPhotoFile);
       }
       formData.append('prompt', 'Edit the image with the prompt');
-      formData.append('imageUrls', JSON.stringify([selectedPose?.image.url]));
+      formData.append('imageUrls', JSON.stringify([selectedPose?.image?.url]));
       formData.append('quality', 'medium');
       formData.append('background', 'auto');
       formData.append('input_fidelity', 'low');
       // formData.append('bottomPhoto', bottomPhotoFile);
 
       const response = await GenerateService.createGeneration(formData);
+
+      // Handle successful generation response
+      if (response.success) {
+        const generatedImage: GeneratedImage = {
+          compositionUrl: response.composition?.cloudinaryUrl || '',
+          editedImageUrl: response.openaiEditing?.editedImageUrl || '',
+          faceSwapUrl: response.openaiEditing?.faceSwapUrl || '',
+          generationId: response.generationId || '',
+        };
+
+        set({
+          generatedImage,
+          isLoading: false,
+          error: null,
+        });
+
+        console.log('Generated image stored:', generatedImage);
+      } else {
+        throw new Error('Generation failed');
+      }
+
+      set({ isLoading: false });
+    } catch (error: any) {
+      // console.error('Generation error:', error);
+      set({
+        error: error.message || 'Failed to generate image',
+        isLoading: false,
+      });
+    }
+  },
+  tryOnGenerate: async () => {
+    try {
+      set({ isLoading: true, error: null });
+
+      const { selectedModel, selectedPose, topPhoto, bottomPhoto, fullBodyPhoto, uploadType } =
+        get();
+
+      // Validate required data
+      if (!selectedModel) {
+        throw new Error('Please select a model');
+      }
+
+      if (!selectedPose) {
+        throw new Error('Please select a pose');
+      }
+
+      // Validate photos based on upload type
+      if (uploadType === 'Separate') {
+        if (!topPhoto) {
+          throw new Error('Please upload a top photo');
+        }
+        if (!bottomPhoto) {
+          throw new Error('Please upload a bottom photo');
+        }
+      } else {
+        if (!fullBodyPhoto) {
+          throw new Error('Please upload a full body photo');
+        }
+      }
+
+      // Prepare FormData for API request
+      const formData = new FormData();
+
+      if (uploadType === 'Separate') {
+        const topPhotoFile = await prepareFileForFormData(topPhoto!, 'topPhoto');
+        if (!topPhotoFile) {
+          throw new Error('Failed to prepare top photo for upload');
+        }
+
+        const bottomPhotoFile = await prepareFileForFormData(bottomPhoto!, 'bottomPhoto');
+        if (!bottomPhotoFile) {
+          throw new Error('Failed to prepare bottom photo for upload');
+        }
+
+        console.log({ selectedPose: selectedPose });
+        formData.append('images', topPhotoFile);
+        formData.append('images', bottomPhotoFile);
+      } else {
+        const fullBodyPhotoFile = await prepareFileForFormData(fullBodyPhoto!, 'fullBodyPhoto');
+        if (!fullBodyPhotoFile) {
+          throw new Error('Failed to prepare full body photo for upload');
+        }
+
+        console.log({ selectedPose: selectedPose });
+        formData.append('images', fullBodyPhotoFile);
+      }
+
+      formData.append('modelImage', selectedPose?.image?.url || '');
+
+      const response = await GenerateService.tryOn(formData);
 
       // Handle successful generation response
       if (response.success) {
@@ -189,10 +279,10 @@ const useGenerateStore = create<UseGenerateType>((set, get) => ({
       }
       formData.append('images', userPoseFile);
       formData.append('prompt', 'Edit the image with the prompt');
-      formData.append('swap_image_url', selectedModel?.image.url || '');
+      formData.append('swap_image_url', selectedModel?.image?.url || '');
       formData.append('quality', 'medium');
       formData.append('background', 'auto');
-      formData.append('input_fidelity', 'low');
+      formData.append('input_fidelity', 'high');
       // formData.append('bottomPhoto', bottomPhotoFile);
 
       const response = await GenerateService.convertImage(formData);

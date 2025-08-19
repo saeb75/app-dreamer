@@ -27,7 +27,7 @@ import Poses from './components/steps/poses';
 
 const Steps = () => {
   const [step, setStep] = useState(1);
-  const { generateImage } = useGenerateStore();
+  const { tryOnGenerate, generateImage } = useGenerateStore();
   return (
     <RootLayout>
       <Header

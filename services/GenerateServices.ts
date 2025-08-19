@@ -101,6 +101,17 @@ export class GenerateServices extends ApiService {
       timeout: 300000, // 5 minutes
     });
   }
+
+  async tryOn(formData: FormData): Promise<CreateGenerationResponse> {
+    const token = await AsyncStorage.getItem('token');
+    return this.post<CreateGenerationResponse>('/try-on', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `${token}`,
+      },
+      timeout: 300000, // 5 minutes
+    });
+  }
 }
 
 export const GenerateService = new GenerateServices();

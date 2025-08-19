@@ -1,11 +1,13 @@
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { MaterialCommunityIcons, AntDesign, Ionicons, Entypo, Feather } from '@expo/vector-icons';
 import useAuthStore from '~/store/useAuth';
 import { useRouter } from 'expo-router';
+import useSubs from '~/store/useSubs';
 const MainHeader = () => {
   const { user } = useAuthStore();
   const router = useRouter();
+  const { isPro } = useSubs();
   return (
     <View className="px-4">
       <View className="flex-row items-center justify-between">
@@ -18,6 +20,16 @@ const MainHeader = () => {
         </View>
 
         <View className="flex-row items-center gap-2">
+          {!isPro && (
+            <Pressable
+              onPress={() => {
+                router.push('/paywall');
+              }}>
+              <View className="rounded-full bg-rose-500 px-3 py-1">
+                <Text className="text-lg font-semibold text-white">Pro</Text>
+              </View>
+            </Pressable>
+          )}
           <View className="rounded-xl border border-gray-500 p-2">
             <Feather
               name="settings"

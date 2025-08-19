@@ -14,6 +14,8 @@ import ApiService from '~/services';
 import useGenerateStore from '~/store/useGenerate';
 import { MotiView, View } from 'moti';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+// import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import useSubs from '~/store/useSubs';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -23,10 +25,28 @@ export default function RootLayout() {
   let { fetchCategories, categoriesInitialized } = useAppStore();
   const { socketMessage, setSocketMessage, setSocketGenerations, fetchGenerations } =
     useGenerateStore();
+  // const { getSubs } = useSubs();
   const { token } = useAuthStore();
   const { user } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
+  const configPurchase = async () => {
+    // Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+    // try {
+    //   let test = await Purchases.configure({
+    //     apiKey: 'appl_YpVNbunrPcmFaUkvbovEDQkMgdN',
+    //   });
+    //   console.log({ test });
+    //   await new Promise((resolve) => setTimeout(resolve, 5000));
+    //   getSubs();
+    //   // Get customer info to check subscription status
+    //   // const { getCustomerInfo } = useSubs.getState();
+    //   // await getCustomerInfo();
+    // } catch (error) {
+    //   console.log(error);
+    // }
+  };
   useEffect(() => {
+    configPurchase();
     fetchGenerations({ page: 1, pageSize: 64 });
   }, []);
   useEffect(() => {
@@ -80,14 +100,9 @@ export default function RootLayout() {
         generationId: data?.generationId,
         inputImage: data?.inputImage,
       });
-      console.log({
-        generationId: data?.generationId,
-        inputImage: data?.inputImage,
-      });
     });
 
     SocketServices.onGenerationProgress((data) => {
-      console.log('Generation progress:', data);
       setSocketMessage(data.message);
       setSocketGenerations({
         generationId: data?.generationId,
@@ -143,12 +158,12 @@ export default function RootLayout() {
 
     SocketServices.onGenerationCompleted((data) => {
       console.log('Generation completed:', data);
-      Alert.alert('Generation completed', data);
+
       setSocketGenerations({
         generationId: data?.generationId,
         inputImage: data?.inputImage,
-        faceSwapUrl: data?.faceSwapUrl,
-        editedImageUrl: data?.editedImageUrl,
+        faceSwapUrl: data?.generatedImageUrl,
+        editedImageUrl: data?.generatedImageUrl,
       });
     });
 
@@ -211,6 +226,14 @@ export default function RootLayout() {
           options={{
             headerShown: false,
             gestureEnabled: false,
+          }}
+        />
+        <Stack.Screen
+          name="paywall"
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+            presentation: 'modal',
           }}
         />
       </Stack>

@@ -1,182 +1,172 @@
-import * as AppleAuthentication from 'expo-apple-authentication';
-import { View, StyleSheet, Text, Alert, TouchableOpacity } from 'react-native';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import useAuthStore from '~/store/useAuth';
+import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  Share,
+  Text,
+  View,
+} from 'react-native';
+import useSubs from '~/store/useSubs';
+import useAuthStore from '~/store/useAuth';
 import Header from './components/header';
-import RootLayout from './components/RootLayout';
 
-export default function App() {
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+type SettingsSectionProps = {
+  title: string;
+};
+
+const SettingsSection = ({ title, children }: React.PropsWithChildren<SettingsSectionProps>) => (
+  <View className="mb-6">
+    <Text className="mb-2 px-6 text-sm font-medium text-gray-500">{title}</Text>
+    <View className="overflow-hidden rounded-xl bg-white">{children}</View>
+  </View>
+);
+
+type SettingsItemProps = {
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  onPress: () => void;
+  showChevron?: boolean;
+  rightContent?: React.ReactNode;
+};
+
+const SettingsItem = ({
+  label,
+  icon,
+  onPress,
+  showChevron = true,
+  rightContent,
+}: SettingsItemProps) => (
+  <Pressable
+    onPress={onPress}
+    className="flex-row items-center justify-between border-b border-gray-100 px-6 py-4 active:bg-gray-50">
+    <View className="flex-row items-center">
+      <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-gray-200">
+        <Ionicons name={icon} size={18} color="#000" />
+      </View>
+      <Text className="text-base text-gray-800">{label}</Text>
+    </View>
+    <View className="flex-row items-center">
+      {rightContent}
+      {showChevron && <Ionicons name="chevron-forward" size={18} color="#9ca3af" />}
+    </View>
+  </Pressable>
+);
+
+export default function SettingsScreen() {
+  const { restorePurchases, loading } = useSubs();
   const { logout } = useAuthStore();
+  const appVersion = Constants.expoConfig?.version || '1.0.0';
 
-  useEffect(() => {
-    checkAppleAuthAvailability();
-  }, []);
-
-  const checkAppleAuthAvailability = async () => {
+  const handleShare = async () => {
     try {
-      const available = await AppleAuthentication.isAvailableAsync();
-      setIsAvailable(available);
-      console.log('Apple Authentication available:', available);
-    } catch (error) {
-      console.error('Error checking Apple Auth availability:', error);
-      setIsAvailable(false);
-    }
-  };
-  const completeSignIn = async (credential: AppleAuthentication.AppleAuthenticationCredential) => {
-    console.log({ credential: credential.identityToken });
-    try {
-      // const response = await fetch('http://localhost:1337/api/auth/apple-mobile', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ identityToken: credential.identityToken }),
-      // });
-      // const { jwt, user } = await response.json();
-      let res = await axios.post(process.env.EXPO_PUBLIC_CONTENT_API + '/api/auth/apple-mobile', {
-        identityToken: credential.identityToken,
+      const result = await Share.share({
+        message:
+          "Check out DecoDreamer! I've been using it to redesign my spaces with AI. " +
+          (Platform.OS === 'ios'
+            ? 'https://apps.apple.com/app/decodreamer/id123456789'
+            : 'https://play.google.com/store/apps/details?id=com.decodreamer'),
+        title: 'DecoDreamer App',
       });
-      console.log(res.data);
     } catch (error) {
-      console.log(JSON.stringify(error));
+      Alert.alert('Error', 'Something went wrong while sharing');
     }
   };
 
-  const handleAppleSignIn = async () => {
-    try {
-      console.log('Starting Apple Sign In...');
+  const handleRateApp = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/app/decodreamer/id123456789?action=write-review'
+        : 'https://play.google.com/store/apps/details?id=com.decodreamer';
 
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      completeSignIn(credential);
-    } catch (e: any) {
-      console.error('Apple Sign In error:', e);
-
-      // Handle specific error cases
-      if (e.code === 'ERR_CANCELED') {
-        Alert.alert('Cancelled', 'Sign in was cancelled by the user.');
-      } else if (e.code === 'ERR_INVALID_RESPONSE') {
-        Alert.alert('Error', 'Invalid response from Apple. Please try again.');
-      } else if (e.code === 'ERR_NOT_AVAILABLE') {
-        Alert.alert('Not Available', 'Apple Sign In is not available on this device.');
-      } else if (e.code === 'ERR_REQUEST_EXPIRED') {
-        Alert.alert('Request Expired', 'The sign in request has expired. Please try again.');
-      } else if (e.code === 'ERR_REQUEST_NOT_HANDLED') {
-        Alert.alert('Request Not Handled', 'The sign in request was not handled properly.');
-      } else if (e.code === 'ERR_REQUEST_INVALID') {
-        Alert.alert('Invalid Request', 'The sign in request was invalid.');
-      } else if (e.code === 'ERR_USER_NOT_FOUND') {
-        Alert.alert('User Not Found', 'The user was not found.');
-      } else if (e.code === 'ERR_USER_CANCELED') {
-        Alert.alert('Cancelled', 'User cancelled the sign in process.');
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
       } else {
-        Alert.alert('Error', `Sign in failed: ${e.message || 'Unknown error occurred'}`);
+        Alert.alert('Error', 'Could not open app store');
       }
-    }
+    });
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.replace('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
-    }
+  const handleTerms = () => {
+    router.push('/terms');
   };
 
-  if (isAvailable === null) {
-    return (
-      <View style={styles.container}>
-        <Text>Checking Apple Sign In availability...</Text>
-      </View>
-    );
-  }
+  const handlePrivacy = () => {
+    router.push('/privacy');
+  };
 
-  if (isAvailable === false) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Apple Sign In is not available on this device.</Text>
-        <Text style={styles.infoText}>This could be because:</Text>
-        <Text style={styles.infoText}>• You're not on iOS 13+ or macOS 10.15+</Text>
-        <Text style={styles.infoText}>
-          • Apple Sign In is not configured in your Apple Developer account
-        </Text>
-        <Text style={styles.infoText}>• The app is not properly configured for Apple Sign In</Text>
-      </View>
-    );
-  }
+  const handleRestore = () => {
+    restorePurchases();
+  };
 
   return (
-    <RootLayout>
+    <SafeAreaView className="flex-1 bg-gray-50">
       <Header title="Settings" />
-      <View className="flex-1 items-center justify-center">
-        <AppleAuthentication.AppleAuthenticationButton
-          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-          cornerRadius={5}
-          style={styles.button}
-          onPress={handleAppleSignIn}
+      <View className="px-6 py-4" />
+      {/* <SettingsSection title="SHARE">
+        <SettingsItem
+          label="Rate DecoDreamer"
+          icon="star-outline"
+          onPress={handleRateApp}
         />
+        <SettingsItem
+          label="Share with Friends"
+          icon="share-social-outline"
+          onPress={handleShare}
+          showChevron={false}
+        />
+      </SettingsSection> */}
 
-        <View style={styles.spacing} />
+      <SettingsSection title="SUBSCRIPTION">
+        <SettingsItem
+          label="Restore Purchases"
+          icon="refresh-outline"
+          onPress={handleRestore}
+          showChevron={false}
+          rightContent={
+            loading ? <ActivityIndicator size="small" color="#f43f5e" className="mr-2" /> : null
+          }
+        />
+        <SettingsItem
+          label="Upgrade to Pro"
+          icon="diamond-outline"
+          onPress={() => router.push('/paywall')}
+        />
+      </SettingsSection>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+      <SettingsSection title="LEGAL">
+        <SettingsItem label="Terms of Service" icon="document-text-outline" onPress={handleTerms} />
+        <SettingsItem
+          label="Privacy Policy"
+          icon="shield-checkmark-outline"
+          onPress={handlePrivacy}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="ABOUT">
+        <View className="flex-row items-center justify-between px-6 py-4">
+          <Text className="text-gray-800">Version</Text>
+          <Text className="text-gray-500">{appVersion}</Text>
+        </View>
+      </SettingsSection>
+
+      <SettingsSection title="ACCOUNT">
+        <SettingsItem label="Logout" icon="log-out-outline" onPress={logout} showChevron={false} />
+      </SettingsSection>
+
+      <View className="mb-8 mt-auto items-center">
+        <View className="flex-row items-center">
+          <Text className="text-sm text-gray-400">Made with </Text>
+          <Ionicons name="heart" size={14} color="#f43f5e" />
+          <Text className="text-sm text-gray-400"> by PixPose Team</Text>
+        </View>
       </View>
-    </RootLayout>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  button: {
-    width: 200,
-    height: 44,
-  },
-  spacing: {
-    height: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#ff4444',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  logoutText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  errorText: {
-    fontSize: 16,
-    color: 'red',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-});

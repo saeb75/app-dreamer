@@ -32,7 +32,7 @@ const PosesCard = ({
         className={`border-2 ${isSelected ? 'border-black' : 'border-transparent'} overflow-hidden`}>
         <Image
           source={{
-            uri: image.url,
+            uri: image?.url,
           }}
           className="h-full w-full"
           resizeMode="cover"
